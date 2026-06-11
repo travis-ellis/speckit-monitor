@@ -2,6 +2,11 @@
 
 > **See where every feature really stands.**
 
+[![Latest release](https://img.shields.io/github/v/release/travis-ellis/speckit-monitor?label=release&color=4f8ef7)](https://github.com/travis-ellis/speckit-monitor/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/travis-ellis/speckit-monitor/total?color=3dd68c)](https://github.com/travis-ellis/speckit-monitor/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20x64-555)](https://github.com/travis-ellis/speckit-monitor/releases/latest)
+[![License: ISC](https://img.shields.io/badge/license-ISC-blue.svg)](#-license)
+
 ![SpecKit Monitor](mockup/speckit-monitor.png)
 
 SpecKit Monitor turns your spec-driven repositories into a living product dashboard. Point it at any Bitbucket repo — Cloud or self-hosted Server / Data Center — pick a feature branch, and it reads the [SpecKit](https://github.com/github/spec-kit) artifacts straight from source: the constitution, `spec.md`, `plan.md`, `tasks.md`, and validation checklists. In seconds you get an honest, at-a-glance picture: completion percentage, task burn-down, stall detection, open questions, and governing principles — no status meetings required.
@@ -13,6 +18,8 @@ When it's time to report up, one click exports a polished **Markdown or PDF** re
 ---
 
 ## ⬇ Download
+
+[![Download for Windows](https://img.shields.io/badge/⬇%20Download-Windows%20x64-4f8ef7?style=for-the-badge)](https://github.com/travis-ellis/speckit-monitor/releases/latest)
 
 **Windows (portable):** grab the latest zip from the **[Releases page](https://github.com/travis-ellis/speckit-monitor/releases/latest)**, unzip it anywhere, and run **`SpecKit Monitor.exe`**. No installer required.
 
