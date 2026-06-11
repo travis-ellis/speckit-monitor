@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpecKit Monitor</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Auth modal -->
+  <div id="auth-modal" class="modal hidden">
+    <div class="modal-box">
+      <h2>Credentials</h2>
+
+      <div class="cred-section-label">Bitbucket</div>
+      <p class="modal-sub">
+        <strong>Cloud (bitbucket.org):</strong> username + App Password (Repositories: Read).<br/>
+        <strong>Server / Data Center:</strong> an HTTP access token. Leave the username
+        blank to send it as a Bearer token, or enter your username for Basic auth.
+      </p>
+      <label>Username <span class="optional">(blank for token / Bearer auth)</span>
+        <input id="auth-username" type="text" placeholder="your-bitbucket-username" autocomplete="off" />
+      </label>
+      <label>App Password / Access Token
+        <input id="auth-password" type="password" placeholder="••••••••••••" autocomplete="off" />
+      </label>
+
+      <div class="cred-divider"></div>
+
+      <div class="cred-section-label">GitHub Copilot (GitHub Models)</div>
+      <p class="modal-sub">
+        Personal Access Token at <strong>github.com → Settings → Developer settings → PATs</strong>.<br/>
+        No specific scopes needed for public GitHub Models access.
+      </p>
+      <label>GitHub Token
+        <input id="auth-github-token" type="password" placeholder="ghp_••••••••••••" autocomplete="off" />
+      </label>
+
+      <div id="auth-error" class="error-msg hidden"></div>
+      <div class="modal-actions">
+        <button id="auth-cancel" class="btn secondary">Cancel</button>
+        <button id="auth-save" class="btn primary">Save &amp; Validate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add repo modal -->
+  <div id="add-modal" class="modal hidden">
+    <div class="modal-box">
+      <h2>Add Repository</h2>
+      <label>Bitbucket URL
+        <input id="add-url" type="text" placeholder="bitbucket.org/workspace/repo or your-server/projects/KEY/repos/repo" autocomplete="off" />
+      </label>
+      <p class="modal-sub">
+        Works with Bitbucket Cloud (bitbucket.org) and self-hosted Server / Data
+        Center URLs (e.g. <em>https://bitbucket.cpanel.net/projects/KEY/repos/repo</em>).
+      </p>
+
+      <button id="add-browse-btn" class="btn secondary full-width">🔍 Browse available repositories</button>
+      <div id="add-browse" class="hidden">
+        <label>Bitbucket host
+          <input id="browse-host" list="browse-hosts" placeholder="bitbucket.org or your-server-host" autocomplete="off" />
+          <datalist id="browse-hosts"></datalist>
+        </label>
+        <div class="browse-controls">
+          <input id="browse-search" type="text" placeholder="Filter by name…" autocomplete="off" />
+          <button id="browse-load" class="btn secondary">Load</button>
+        </div>
+        <div id="browse-status" class="modal-sub"></div>
+        <div id="browse-list" class="browse-list"></div>
+      </div>
+      <label>Alias <span class="optional">(optional)</span>
+        <input id="add-alias" type="text" placeholder="e.g. Payments Feature" autocomplete="off" />
+      </label>
+      <label>Branch <span class="optional">(optional — defaults to the repo's default branch)</span>
+        <input id="add-branch" type="text" placeholder="e.g. 001-some-feature" autocomplete="off" />
+      </label>
+      <p class="modal-sub">
+        SpecKit work usually lives on a per-feature branch (e.g. <em>001-payments</em>)
+        that hasn't been merged yet. Set the branch to the feature you want to monitor.
+      </p>
+      <div id="add-error" class="error-msg hidden"></div>
+      <div class="modal-actions">
+        <button id="add-cancel" class="btn secondary">Cancel</button>
+        <button id="add-confirm" class="btn primary">Add Repo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remove confirm modal -->
+  <div id="remove-modal" class="modal hidden">
+    <div class="modal-box small">
+      <h2>Remove Repository</h2>
+      <p id="remove-msg"></p>
+      <div class="modal-actions">
+        <button id="remove-cancel" class="btn secondary">Cancel</button>
+        <button id="remove-confirm" class="btn danger">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change branch modal -->
+  <div id="branch-modal" class="modal hidden">
+    <div class="modal-box">
+      <h2>Change Branch</h2>
+      <p class="modal-sub">
+        Select which branch to monitor for SpecKit content. This is usually a
+        per-feature branch (e.g. <em>001-payments</em>) that hasn't merged yet.
+      </p>
+      <label>Branch
+        <select id="branch-select"></select>
+      </label>
+      <div id="branch-loading" class="modal-sub hidden">Loading branches…</div>
+      <div id="branch-error" class="error-msg hidden"></div>
+      <div class="modal-actions">
+        <button id="branch-cancel" class="btn secondary">Cancel</button>
+        <button id="branch-save" class="btn primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export report modal -->
+  <div id="export-modal" class="modal hidden">
+    <div class="modal-box small">
+      <h2>Export Report</h2>
+      <p class="modal-sub">Save or copy the current report.</p>
+      <div class="seg" id="export-level">
+        <button class="seg-btn" data-level="simple">Simple</button>
+        <button class="seg-btn active" data-level="detailed">Detailed</button>
+      </div>
+      <p class="modal-sub" id="export-level-note">Detailed includes the Project Artifacts section; Simple omits it.</p>
+      <div class="modal-actions stacked">
+        <button id="export-md" class="btn primary">Save as Markdown</button>
+        <button id="export-pdf" class="btn secondary">Save as PDF</button>
+        <button id="export-copy" class="btn secondary">Copy Markdown</button>
+        <button id="export-cancel" class="btn ghost">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Digest modal -->
+  <div id="digest-modal" class="modal hidden">
+    <div class="modal-box">
+      <h2>Stakeholder Digest</h2>
+      <p class="modal-sub">
+        A summary of all active watched repos. Copy it, save it, or send it to a
+        Slack / Teams incoming webhook.
+      </p>
+      <textarea id="digest-preview" class="digest-preview" readonly></textarea>
+      <label>Webhook URL <span class="optional">(Slack or Teams incoming webhook, optional)</span>
+        <input id="digest-webhook" type="text" placeholder="https://hooks.slack.com/services/…" autocomplete="off" />
+      </label>
+      <div id="digest-status" class="modal-sub"></div>
+      <div class="modal-actions">
+        <button id="digest-close" class="btn ghost">Close</button>
+        <button id="digest-copy" class="btn secondary">Copy</button>
+        <button id="digest-save" class="btn secondary">Save .md</button>
+        <button id="digest-send" class="btn primary">Send to Webhook</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── App shell ─────────────────────────────────────────────────── -->
+  <div id="app">
+
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div id="sidebar-header">
+        <span class="logo">⬡ SpecKit</span>
+        <span class="logo-sub">Monitor</span>
+      </div>
+
+      <div id="sidebar-actions">
+        <button id="btn-add-repo" class="btn primary full-width">+ Add Repo</button>
+        <button id="btn-run-all" class="btn secondary full-width">↻ Refresh All</button>
+      </div>
+
+      <div id="repo-list">
+        <div class="empty-state" id="repo-empty">No repos yet.<br/>Click <em>Add Repo</em> to start.</div>
+      </div>
+
+      <div id="archived-group" class="hidden">
+        <div id="archived-header">
+          <span id="archived-caret">▸</span> Archived <span id="archived-count"></span>
+        </div>
+        <div id="archived-list" class="hidden"></div>
+      </div>
+
+      <div id="sidebar-footer">
+        <button id="btn-auth" class="btn ghost" title="Bitbucket credentials">🔑 Credentials</button>
+      </div>
+    </aside>
+
+    <!-- Main panel -->
+    <main id="main">
+
+      <!-- Welcome / empty state -->
+      <div id="welcome" class="center-panel">
+        <div class="welcome-icon">⬡</div>
+        <h1>SpecKit Monitor</h1>
+        <p>Add a Bitbucket repo and run a report to see feature progress, open questions, and stall detection.</p>
+        <button class="btn primary large" id="welcome-add">Add Your First Repo</button>
+      </div>
+
+      <!-- Dashboard: watched projects (default home view) -->
+      <div id="dashboard" class="hidden">
+        <div id="dashboard-header">
+          <h1>Watched Projects</h1>
+          <div class="dash-header-actions">
+            <button id="dash-digest" class="btn secondary">⬇ Digest</button>
+            <button id="dash-add" class="btn primary">+ Add Repo</button>
+          </div>
+        </div>
+        <div id="dashboard-grid"></div>
+      </div>
+
+      <!-- Report panel (hidden until a report loads) -->
+      <div id="report-panel" class="hidden">
+
+        <!-- Toolbar -->
+        <div id="report-toolbar">
+          <div id="report-title">
+            <span id="rt-name"></span>
+            <span id="rt-sub">
+              <a id="rt-url" class="ext-link" href="#" title="Open in browser"></a>
+              <span id="rt-branch"></span>
+            </span>
+          </div>
+          <div id="report-actions">
+            <button id="btn-run-report" class="btn primary">▶ Run Report</button>
+            <button id="btn-run-diff" class="btn secondary">⟳ Diff Update</button>
+            <button id="btn-edit-branch" class="btn secondary" title="Change monitored branch">⑂ Branch</button>
+            <button id="btn-clone-repo" class="btn secondary" title="Clone this watch entry">⧉ Clone</button>
+            <button id="btn-export" class="btn secondary" title="Export this report">⬇ Export</button>
+            <button id="btn-archive-repo" class="btn secondary" title="Archive this repo">🗄 Archive</button>
+            <button id="btn-remove-repo" class="btn danger-ghost" title="Remove from watch list">✕</button>
+          </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div id="progress-bar" class="hidden">
+          <div id="progress-inner"></div>
+          <span id="progress-label"></span>
+        </div>
+
+        <!-- Report content -->
+        <div id="report-content" class="hidden">
+
+          <!-- Hero row -->
+          <div id="hero-row">
+            <div class="hero-card" id="card-status">
+              <div class="hero-label">Status</div>
+              <div id="status-badge" class="badge">—</div>
+            </div>
+            <div class="hero-card" id="card-completion">
+              <div class="hero-label">Completion</div>
+              <div class="completion-wrap">
+                <div class="completion-bar-bg">
+                  <div id="completion-fill" class="completion-bar-fill"></div>
+                </div>
+                <div id="completion-pct" class="completion-pct">—</div>
+              </div>
+            </div>
+            <div class="hero-card clickable" id="card-tasks" title="Show task breakdown">
+              <div class="hero-label">Tasks <span class="hero-caret" id="tasks-caret">▾</span></div>
+              <div id="tasks-fraction" class="hero-val">—</div>
+            </div>
+            <div class="hero-card" id="card-questions">
+              <div class="hero-label">Open Questions</div>
+              <div id="questions-fraction" class="hero-val">—</div>
+            </div>
+          </div>
+
+          <!-- Tasks breakdown (toggled from the Tasks card) -->
+          <section id="tasks-section" class="hidden">
+            <h2>Tasks <span id="tasks-section-summary" class="section-meta"></span></h2>
+            <div id="tasks-detail"></div>
+          </section>
+
+          <!-- Diff changes banner (only in diff mode) -->
+          <section id="diff-section" class="hidden">
+            <h2>Changes Since Last Run</h2>
+            <div id="diff-timestamp" class="section-meta"></div>
+            <ul id="diff-list" class="change-list"></ul>
+            <div id="diff-new-q" class="hidden">
+              <h3>New Open Questions</h3>
+              <ul id="diff-new-q-list" class="q-list"></ul>
+            </div>
+            <div id="diff-resolved-q" class="hidden">
+              <h3>Newly Resolved</h3>
+              <ul id="diff-resolved-q-list" class="q-list resolved"></ul>
+            </div>
+          </section>
+
+          <!-- Summary -->
+          <section id="summary-section">
+            <h2>Summary</h2>
+            <p id="summary-text"></p>
+          </section>
+
+          <!-- Recent Activity -->
+          <section id="activity-section">
+            <h2>Recent Activity</h2>
+            <p id="activity-text"></p>
+          </section>
+
+          <!-- Trends -->
+          <section id="trends-section" class="hidden">
+            <h2>Trends <span id="trends-summary" class="section-meta"></span></h2>
+            <div id="trends-body"></div>
+          </section>
+
+          <!-- Milestones -->
+          <section id="milestones-section">
+            <h2>Key Milestones &amp; Next Steps</h2>
+            <ul id="milestones-list" class="milestone-list"></ul>
+          </section>
+
+          <!-- Consistency checks -->
+          <section id="consistency-section" class="hidden">
+            <h2>Consistency Checks <span id="consistency-summary" class="section-meta"></span></h2>
+            <div id="consistency-list"></div>
+          </section>
+
+          <!-- Open Questions -->
+          <section id="questions-section">
+            <h2>Open Questions</h2>
+            <div id="questions-list"></div>
+          </section>
+
+          <!-- Project Artifacts -->
+          <section id="artifacts-section">
+            <h2>Project Artifacts <span id="artifacts-summary" class="section-meta"></span></h2>
+            <div id="artifacts-list"></div>
+          </section>
+
+          <!-- Constitution -->
+          <section id="constitution-section" class="hidden">
+            <h2>Constitution <span id="constitution-summary" class="section-meta"></span></h2>
+            <div id="constitution-concerns"></div>
+            <div id="constitution-list"></div>
+          </section>
+
+          <!-- Validation checklists -->
+          <section id="checklist-section" class="hidden">
+            <h2>Validation Checklists <span id="checklist-summary" class="section-meta"></span></h2>
+            <div id="checklist-list"></div>
+          </section>
+
+          <div id="report-meta"></div>
+
+        </div><!-- /report-content -->
+
+        <!-- Error state -->
+        <div id="report-error" class="hidden center-panel">
+          <div class="error-icon">⚠</div>
+          <p id="report-error-msg"></p>
+        </div>
+
+      </div><!-- /report-panel -->
+
+    </main>
+  </div><!-- /app -->
+
+  <script src="renderer.js"></script>
+</body>
+</html>

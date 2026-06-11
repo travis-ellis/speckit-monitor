@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>SpecKit Monitor — sample</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --bg-deep:#0f1120; --bg-side:#161929; --bg-main:#1c1f35; --bg-card:#232640;
+    --bg-card2:#2a2e50; --bg-hover:#2e3258; --bg-active:#333760;
+    --accent:#4f8ef7; --accent-dim:#2d5bbf; --green:#3dd68c; --green-dim:#1f7a52;
+    --yellow:#f5c842; --red:#f05252; --red-dim:#7a1f1f; --purple:#a78bfa;
+    --text-1:#e8eaf6; --text-2:#9ba4c8; --text-3:#616a99; --text-dim:#3d4466;
+    --border:#2a2e50; --radius:8px; --radius-sm:4px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    font-size:14px; color:var(--text-1);
+  }
+  html,body{height:900px;width:1440px;overflow:hidden;background:var(--bg-deep);}
+  #app{display:flex;height:900px;}
+
+  /* Sidebar */
+  #sidebar{width:260px;flex-shrink:0;background:var(--bg-side);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+  #sidebar-header{padding:20px 18px 12px;display:flex;align-items:baseline;gap:6px;border-bottom:1px solid var(--border);}
+  .logo{font-size:18px;font-weight:700;color:var(--accent);letter-spacing:-0.5px;}
+  .logo-sub{font-size:12px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;}
+  #sidebar-actions{padding:12px;display:flex;flex-direction:column;gap:6px;}
+  .repo-list{flex:1;padding:4px 0;}
+  .repo-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);margin:1px 6px;}
+  .repo-item.active{background:var(--bg-active);}
+  .repo-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--text-3);}
+  .repo-dot.active-dot{background:var(--green);box-shadow:0 0 6px var(--green);}
+  .repo-dot.stalled-dot{background:var(--red);}
+  .repo-item-info{flex:1;min-width:0;}
+  .repo-name{font-size:13px;font-weight:500;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .repo-meta{font-size:11px;color:var(--text-3);}
+  .repo-pct{font-size:11px;font-weight:600;color:var(--text-2);}
+  #sidebar-footer{border-top:1px solid var(--border);padding:10px 12px;}
+
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;padding:7px 16px;border-radius:var(--radius-sm);border:none;font-size:13px;font-weight:600;white-space:nowrap;gap:6px;}
+  .btn.primary{background:var(--accent);color:#fff;}
+  .btn.secondary{background:var(--bg-card2);color:var(--text-2);border:1px solid var(--border);}
+  .btn.ghost{background:transparent;color:var(--text-2);}
+  .btn.danger-ghost{background:transparent;color:var(--text-3);border:1px solid var(--border);}
+  .btn.full-width{width:100%;}
+
+  /* Main */
+  #main{flex:1;background:var(--bg-main);display:flex;flex-direction:column;overflow:hidden;}
+  #report-toolbar{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--border);background:var(--bg-side);gap:16px;}
+  #rt-name{font-size:15px;font-weight:600;color:var(--text-1);}
+  #rt-sub{display:flex;align-items:baseline;gap:0;}
+  .ext-link{font-size:11px;color:var(--accent);text-decoration:none;}
+  #rt-branch{font-size:11px;color:var(--text-3);}
+  #report-actions{display:flex;gap:8px;}
+
+  #report-content{flex:1;padding:24px 32px;display:flex;flex-direction:column;gap:20px;}
+
+  /* Hero */
+  #hero-row{display:grid;grid-template-columns:auto 1fr auto auto;gap:16px;}
+  .hero-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:flex;flex-direction:column;gap:10px;}
+  .hero-label{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-3);font-weight:600;}
+  .hero-val{font-size:22px;font-weight:700;color:var(--text-1);}
+  .hero-caret{font-size:9px;color:var(--text-3);}
+  .badge{display:inline-flex;align-items:center;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
+  .badge.active{background:var(--green-dim);color:var(--green);}
+  .completion-wrap{display:flex;align-items:center;gap:12px;}
+  .completion-bar-bg{flex:1;height:10px;background:var(--bg-deep);border-radius:99px;overflow:hidden;}
+  .completion-bar-fill{height:100%;border-radius:99px;background:var(--yellow);}
+  .completion-pct{font-size:18px;font-weight:700;min-width:44px;text-align:right;color:var(--yellow);}
+
+  /* Sections */
+  section{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;display:flex;flex-direction:column;gap:12px;}
+  section h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-3);}
+  .section-meta{font-size:12px;color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0;}
+  section p{color:var(--text-2);line-height:1.7;font-size:14px;}
+
+  /* Trends */
+  #trends-body{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .trend-card{background:var(--bg-card2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;}
+  .trend-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;}
+  .trend-title{font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-3);font-weight:600;}
+  .trend-now{font-size:16px;font-weight:700;color:var(--text-1);}
+  .trend-chart .spark{width:100%;height:80px;display:block;}
+  .trend-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-top:4px;}
+
+  /* Findings + questions */
+  .finding{background:var(--bg-card2);border-left:3px solid var(--yellow);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:8px;}
+  .finding-msg{display:flex;gap:10px;align-items:baseline;font-size:13px;color:var(--text-2);line-height:1.5;}
+  .finding-msg strong{color:var(--text-1);}
+  .finding-icon{color:var(--yellow);}
+  .q-list{list-style:none;display:flex;flex-direction:column;gap:6px;}
+  .q-list li{display:flex;gap:10px;align-items:flex-start;background:var(--bg-card2);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;color:var(--text-2);line-height:1.5;}
+  .q-list li .qi{flex-shrink:0;font-weight:700;color:var(--red);}
+  .q-category{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--yellow);margin-bottom:8px;}
+</style>
+</head>
+<body>
+  <div id="app">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div id="sidebar-header">
+        <span class="logo">⬡ SpecKit</span>
+        <span class="logo-sub">Monitor</span>
+      </div>
+      <div id="sidebar-actions">
+        <button class="btn primary full-width">+ Add Repo</button>
+        <button class="btn secondary full-width">↻ Refresh All</button>
+      </div>
+      <div class="repo-list">
+        <div class="repo-item active">
+          <div class="repo-dot active-dot"></div>
+          <div class="repo-item-info"><div class="repo-name">Payments Service</div><div class="repo-meta">Last run: Jun 8, 9:42 AM</div></div>
+          <div class="repo-pct">68%</div>
+        </div>
+        <div class="repo-item">
+          <div class="repo-dot active-dot"></div>
+          <div class="repo-item-info"><div class="repo-name">Search Revamp</div><div class="repo-meta">Last run: Jun 8, 8:15 AM</div></div>
+          <div class="repo-pct">92%</div>
+        </div>
+        <div class="repo-item">
+          <div class="repo-dot stalled-dot"></div>
+          <div class="repo-item-info"><div class="repo-name">Notifications API</div><div class="repo-meta">Last run: May 26, 4:03 PM</div></div>
+          <div class="repo-pct">34%</div>
+        </div>
+        <div class="repo-item">
+          <div class="repo-dot active-dot"></div>
+          <div class="repo-item-info"><div class="repo-name">Billing Portal</div><div class="repo-meta">Last run: Jun 7, 1:20 PM</div></div>
+          <div class="repo-pct">100%</div>
+        </div>
+        <div class="repo-item">
+          <div class="repo-dot active-dot"></div>
+          <div class="repo-item-info"><div class="repo-name">Onboarding Flow</div><div class="repo-meta">Last run: Jun 6, 11:30 AM</div></div>
+          <div class="repo-pct">57%</div>
+        </div>
+      </div>
+      <div id="sidebar-footer">
+        <button class="btn ghost">🔑 Credentials</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main id="main">
+      <div id="report-toolbar">
+        <div>
+          <div id="rt-name">Payments Service</div>
+          <div id="rt-sub">
+            <a class="ext-link">bitbucket.org/acme/payments-service</a>
+            <span id="rt-branch">&nbsp;&nbsp;·&nbsp;&nbsp;branch: 014-payment-retries</span>
+          </div>
+        </div>
+        <div id="report-actions">
+          <button class="btn primary">▶ Run Report</button>
+          <button class="btn secondary">⟳ Diff Update</button>
+          <button class="btn secondary">⑂ Branch</button>
+          <button class="btn secondary">⧉ Clone</button>
+          <button class="btn secondary">⬇ Export</button>
+          <button class="btn danger-ghost">✕</button>
+        </div>
+      </div>
+
+      <div id="report-content">
+        <!-- Hero -->
+        <div id="hero-row">
+          <div class="hero-card">
+            <div class="hero-label">Status</div>
+            <div class="badge active">Active</div>
+          </div>
+          <div class="hero-card">
+            <div class="hero-label">Completion</div>
+            <div class="completion-wrap">
+              <div class="completion-bar-bg"><div class="completion-bar-fill" style="width:68%"></div></div>
+              <div class="completion-pct">68%</div>
+            </div>
+          </div>
+          <div class="hero-card">
+            <div class="hero-label">Tasks <span class="hero-caret">▾</span></div>
+            <div class="hero-val">27 / 40</div>
+          </div>
+          <div class="hero-card">
+            <div class="hero-label">Open Questions</div>
+            <div class="hero-val" style="color:var(--yellow)">3 open</div>
+          </div>
+        </div>
+
+        <!-- Trends -->
+        <section>
+          <h2>Trends <span class="section-meta">(6 runs)</span></h2>
+          <div id="trends-body">
+            <div class="trend-card">
+              <div class="trend-head"><span class="trend-title">Completion</span><span class="trend-now">68%</span></div>
+              <div class="trend-chart">
+                <svg viewBox="0 0 560 120" class="spark" preserveAspectRatio="none">
+                  <polygon points="10,110 10,82 118,73 226,64 334,58 442,54 550,48 550,110" fill="#3dd68c" fill-opacity="0.12"/>
+                  <polyline points="10,82 118,73 226,64 334,58 442,54 550,48" fill="none" stroke="#3dd68c" stroke-width="2" vector-effect="non-scaling-stroke"/>
+                  <circle cx="550" cy="48" r="3.5" fill="#3dd68c"/>
+                </svg>
+              </div>
+              <div class="trend-axis"><span>May 12</span><span>Jun 8</span></div>
+            </div>
+            <div class="trend-card">
+              <div class="trend-head"><span class="trend-title">Tasks completed</span><span class="trend-now">27/40</span></div>
+              <div class="trend-chart">
+                <svg viewBox="0 0 560 120" class="spark" preserveAspectRatio="none">
+                  <polygon points="10,110 10,90 118,80 226,68 334,60 442,52 550,45 550,110" fill="#4f8ef7" fill-opacity="0.12"/>
+                  <polyline points="10,90 118,80 226,68 334,60 442,52 550,45" fill="none" stroke="#4f8ef7" stroke-width="2" vector-effect="non-scaling-stroke"/>
+                  <circle cx="550" cy="45" r="3.5" fill="#4f8ef7"/>
+                </svg>
+              </div>
+              <div class="trend-axis"><span>May 12</span><span>Jun 8</span></div>
+            </div>
+            <div class="trend-card">
+              <div class="trend-head"><span class="trend-title">Open questions</span><span class="trend-now">3</span></div>
+              <div class="trend-chart">
+                <svg viewBox="0 0 560 120" class="spark" preserveAspectRatio="none">
+                  <polygon points="10,110 10,18 118,32 226,46 334,60 442,68 550,68 550,110" fill="#f5c842" fill-opacity="0.12"/>
+                  <polyline points="10,18 118,32 226,46 334,60 442,68 550,68" fill="none" stroke="#f5c842" stroke-width="2" vector-effect="non-scaling-stroke"/>
+                  <circle cx="550" cy="68" r="3.5" fill="#f5c842"/>
+                </svg>
+              </div>
+              <div class="trend-axis"><span>May 12</span><span>Jun 8</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Summary -->
+        <section>
+          <h2>Summary</h2>
+          <p>Payments Service adds automatic retry handling for failed card payments, with idempotent retries and a configurable backoff schedule. Core processing flows are implemented and under test; remaining work covers reconciliation reporting and edge-case handling for partial captures.</p>
+        </section>
+
+        <!-- Consistency -->
+        <section>
+          <h2>Consistency Checks <span class="section-meta">(2)</span></h2>
+          <div class="finding">
+            <div class="finding-msg"><span class="finding-icon">⚠</span><span><strong>Requirements without tasks:</strong> 2 requirements in spec.md are not referenced by any task (FR-018, NFR-004).</span></div>
+          </div>
+          <div class="finding">
+            <div class="finding-msg"><span class="finding-icon">⚠</span><span><strong>Unresolved clarifications:</strong> 3 unresolved clarifications remain while 13 tasks are still incomplete — these may block delivery.</span></div>
+          </div>
+        </section>
+
+        <!-- Open Questions -->
+        <section>
+          <h2>Open Questions <span class="section-meta">(3 unresolved)</span></h2>
+          <div class="q-category">Inline clarification</div>
+          <ul class="q-list">
+            <li><span class="qi">?</span><span>Should retries continue across calendar-day boundaries for subscription charges?</span></li>
+            <li><span class="qi">?</span><span>What is the maximum acceptable end-to-end retry window before a payment is flagged for manual review?</span></li>
+            <li><span class="qi">?</span><span>Do partial captures require a separate idempotency key from the original authorization?</span></li>
+          </ul>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,53 @@
+{
+  "name": "speckit-monitor",
+  "version": "1.0.0",
+  "description": "Monitor SpecKit-driven Bitbucket repos for product managers",
+  "main": "dist/electron/main.js",
+  "bin": {
+    "speckit-monitor": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/index.ts",
+    "dev": "tsx src/index.ts",
+    "gui": "npm run build && electron dist/electron/main.js",
+    "gui:dev": "electron dist/electron/main.js",
+    "package": "npm run build && set CSC_IDENTITY_AUTO_DISCOVERY=false&& set CSC_LINK=&& electron-builder --win --dir"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.16.1",
+    "chalk": "^4.1.2",
+    "commander": "^14.0.3",
+    "openai": "^6.39.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "electron": "^42.2.0",
+    "electron-builder": "^26.8.1",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3"
+  },
+  "build": {
+    "appId": "com.speckit.monitor",
+    "productName": "SpecKit Monitor",
+    "electronDist": "./node_modules/electron/dist",
+    "electronVersion": "42.2.0",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "electronLanguages": ["en-US"],
+    "win": {
+      "target": "dir"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Packaged app
+release/
+
+# Secrets / env
+.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local runtime / state
+.speckit-monitor/
+.speckit-data/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
